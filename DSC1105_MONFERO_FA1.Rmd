@@ -1,0 +1,109 @@
+---
+title: "DSC1105_MONFERO_FA1"
+author: "John Benedict A. Monfero"
+date: "2025-02-02"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<center><h3 style="color: purple">Exploratory Data Analysis</h3></enter> 
+<center><h3 style="color: purple">Formative Assessment 1</h3></center> 
+
+
+<center><h4 style="color: red">To begin, download and preview the CyTOF data:</h4></center> 
+
+```{r}
+data <- read.csv("cytof_one_experiment.csv", stringsAsFactors = FALSE)
+
+head(data)
+```
+
+<center><h4 style="color: red">Definition of CyTOF</h4></center> 
+> "**Cytometry by time of flight**, or **CyTOF**, is an application of mass cytometry used to quantify labeled targets on the surface and interior of single cells. CyTOF allows the quantification of multiple cellular components simultaneously using an ICP-MS detector." - Wikipedia (n.d par. 1)
+
+<center><h4 style="color: red">Choose one of the columns of the dataset and make at least two plots showing its distribution, here are the following plot types below: </h4></center> 
+
+> ECDF
+>
+> quantile
+>
+> histogram
+> 
+> density estimate
+
+
+```{r}
+# Import neccesary libraries
+ library(lattice)
+ library(ggplot2)
+ library(dplyr)
+ library(magrittr)
+ library(stringr)
+```
+
+```{r}
+# The chosen series - column - of CyTOF data: `GranzymeB`
+ggplot(data, aes(x = GranzymeB)) + stat_ecdf() + xlab("GranzymeB") + ylab("Cummulative Probability") + ggtitle("The Empirical CDF of GranzymeB")
+```
+<h5 style="color: ForestGreen">ECDF Interpretation</h5>
+
+<p style="color: ForestGreen">The ECDF distribution starts near 0 (some are negative values) and gradually rises, showing how the data points accumulate from the `min(GranzymeB)` up to the `max(GranzymeB)` values of GranzymeB. However, between ~2.5 and 5 suggests a steep increase that many values of GranzymeB are concentrated in this range. Afterwards, a flatter region notices again after `values(GranzymeB) >= 5` by which suggests fewer observations in the extreme high range.</p>
+
+```{r}
+# Quantile Function
+
+# In R, we will manually create the necessary procedures before performing the Quantile Function
+
+GranzymeB_sorted <- data %>%
+  arrange(GranzymeB)
+
+# Compute empirical quantile values (f.value)
+n <- nrow(GranzymeB_sorted)
+GranzymeB_sorted$f.value <- (0.5:(n - 0.5)) / n
+
+# Plot Quantile Function
+ggplot(GranzymeB_sorted, aes(x = f.value, y = GranzymeB)) +
+  geom_line() +
+  geom_point() +
+  geom_abline(aes(slope = 5, intercept = 0)) +
+  labs(
+    title = "Quantile Function of GranzymeB",
+    x = "Empirical Quantile (f.value)",
+    y = "GranzymeB Value"
+  ) +
+  theme_minimal()
+```
+
+<h5 style="color: ForestGreen">Quantile Function Interpretation</h5>
+
+<p style="color: ForestGreen">The Quantile distribution displays the Quantile Distribution of the values found in the series of data: `GranzymeB` despite the slope of the straight line is given, we are able to see the sharp spike up of data values from 0th percentile to 25th percentile of the entire Quantile Distribution. Conversely, from 25th to 90th percentile, the growth value of `GranzymeB` became more stagnant than the straight line's constant growth, nevertheless, a sudden but unnatural growth of values happened again between 90th to 100th percentile of the distribution, suggesting some abnormalities of distribution in both extreme quantiles due to sudden steepness observed</p>
+
+<center><h4 style="color: red">Choose any two of the columns of the dataset and make a Q-Q plot comparing the distributions. What does the Q-Q plot tell you about similarities or differences between the distributions of the values in the two columns? </h4></center>
+
+```{r}
+# Choosing series of CyTOF data to be compared with: Perforin and GranzymeB
+# Compute Q-Q plot data without plotting it directly
+qq.df <- as.data.frame(qqplot(data$Perforin, data$GranzymeB, plot.it = FALSE))
+
+# Plot using ggplot2
+ggplot(qq.df, aes(x = x, y = y)) +
+  geom_point() +
+  geom_abline(aes(slope = 1, intercept = -3)) +
+  labs(
+    title = "Q-Q Plot: Perforin vs GranzymeB",
+    x = "Perforin Quantiles",
+    y = "GranzymeB Quantiles"
+  ) +
+  theme_minimal()
+```
+
+<h5 style="color: ForestGreen">Q-Q Plot Interpretation</h5>
+
+<p style="color: ForestGreen">Even if an abritrary line where given, as if some of the points closely followed the diagonal line, it would suggest that overall: Perforin and GranzymeB have similar distributions but only from upper half quantile; there are noticeable deviations, indicating that the two distributions differ in the early quantiles of both groups: Perforin and GranzymeB.For small quantiles (left bottom side of the plot), the points stay close to the flat line, suggesting that from 0th to 50th percentile of the Perforin will be actually 0th to 10th percentile in GranzymeB distributions.</p>
+
+
