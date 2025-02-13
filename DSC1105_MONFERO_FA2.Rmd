@@ -1,0 +1,104 @@
+---
+title: "DSC1105_MONFERO_FA2"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##### For the first set of questions, we will look again at the `CyTOF` data. 
+
+> Each row in the dataset represents a cell, and each column in the dataset represents a protein and the value is element i, j of the dataset represents the amount of protein j in cell i.
+
+```{r}
+library(tidyverse)
+
+data <- read.csv("cytof_one_experiment.csv", stringsAsFactors = FALSE)
+
+head(data)
+```
+
+##### Use `pivot_longer` to reshape the dataset into one that has two columns, the first giving the protein identity and the second giving the amount of the protein in one of the cells. The dataset you get should have 1750000 rows (50000 cells in the original dataset times 35 proteins).
+
+```{r}
+revised_data_longer <- data %>%
+  pivot_longer(cols = c("NKp30", "KIR3DL1", "NKp44", "KIR2DL1", "GranzymeB", "CXCR6", "CD161", "KIR2DS4", 
+         "NKp46", "NKG2D", "NKG2C", "X2B4", "CD69", "KIR3DL1.S1", "CD2", "KIR2DL5", "DNAM.1", 
+         "CD4", "CD8", "CD57", "TRAIL", "KIR3DL2", "MIP1b", "CD107a", "GM.CSF", "CD16", "TNFa", 
+         "ILT2", "Perforin", "KIR2DL2.L3.S2", "KIR2DL3", "NKG2A", "NTB.A", "CD56", "INFg"),
+         names_to = "Protein_Identity"
+)
+revised_data_longer
+```
+#### Use `group_by` and `summarise` to find the median protein level and the median absolute deviation of the protein level for each marker. (Use the R functions `median` and `mad`)
+
+```{r}
+median_mad_data <- revised_data_longer %>%
+  group_by(Protein_Identity) %>%
+  summarize(median_protein_level = median(value), median_absolute_deviation_protein_level = mad(value))
+
+median_mad_data
+```
+
+#### Make a plot with mad on the x-axis and median on the y-axis. This is known as a spreadlocation (s-l) plot. What does it tell you about the relationship between the median and the mad?
+
+```{r}
+ggplot(data = median_mad_data) +
+  geom_point(mapping = aes(x = median_absolute_deviation_protein_level, y = median_protein_level)) +
+  geom_abline(slope = 1, intercept = -0.8, color = "red") +
+  geom_abline(slope = -1.5, intercept = 6, color = "purple")
+```
+```{r}
+print("The graph above has data points shown, but can be traced down any trends but as with two systems of linear equation instead of one clear trend (this shows other factors may play the variability of data locations within two variables considered here).
+      
+      This suggests that as the MAD of each protein level increases, the fluctuation of each MEDIAN's protein level converge to only one event (solution), but before that intersection; lower MAD values clearly demonstrates the variability of MEDIAN values became more observable.
+      ")
+```
+
+
+```{r}
+correlation <- cor(median_mad_data$median_absolute_deviation_protein_level,
+                   median_mad_data$median_protein_level)
+correlation
+```
+
+
+```{r}
+print("Moreover, the relationship between MAD to the MEDIAN values are said to be positively but very weak correlation (corr = 0.1542416), meaning that any given MAD values shown is not strongly link to afford to likelihood to increases the MEDIAN values of protein levels, rather, the MEDIAN variation shows independently despite the constant increase/decrease in MAD values")
+```
+
+
+##### Next, for more practice pivoting, we will look at a dataset from `dcldata`. Install the package dcldata using
+
+```{r}
+# install.packages("remotes")
+# remotes::install_github("dcl-docs/dcldata")
+```
+> Load the package using library(dcldata).
+
+> Load the dataset example_gymnastics_2 using the command data(example_gymnastics_2). Notice that the column names are of the form event_year.
+
+```{r}
+library(dcldata)
+data2 <- data(example_gymnastics_2)
+```
+
+#### Using either `pivot_longer` on its own or `pivot_longer` in combination with `separate`, `reshape` the dataset so that it has columns for `country`, `event`, `year`, and `score`.
+
+```{r}
+data2 <- data.frame(
+  country = c("United States", "Russia", "China"),
+  vault_2012 = c(48.1, 46.4, 44.3),
+  floor_2012 = c(45.4, 41.6, 40.8),
+  vault_2016 = c(46.9, 45.7, 44.3),
+  floor_2016 = c(46.0, 42.0, 42.1)
+)
+
+data2 %>%
+  pivot_longer(cols = c(starts_with("vault"), starts_with("floor")), names_to = "event", values_to = "event_score") %>%
+  separate(col = event, into = c("type", "year"), sep = "_") %>%
+  arrange(type, year)
+```
+
+
