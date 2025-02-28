@@ -1,0 +1,127 @@
+---
+title: "DSC1105_MONFERO_FA3"
+author: "John Benedict A. Monfero"
+date: "2025-02-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+diamonds
+```
+
+### Create a histogram on the diamonds dataset
+```{r}
+# Let `p` be the container of the histogram visualization below
+p <- ggplot(data = diamonds, aes(x = carat))
+
+p # The figure below only shows a blank canvas but the x-axis is all about carat of the diamond dataset
+```
+
+### Re-write this using the layer function like we did in class.
+```{r}
+# Hint: if you don’t know what the default values for some of the aspects of the plot, examine p$layers.
+p <- p + layer(
+  geom = "bar",
+  stat = "bin",
+  position = "stack",
+  mapping = aes(x = carat),
+  params = list(binwidth = 0.1)
+)
+
+# Recall p
+p # p <- p$layer would give us the proper histogram visualization that we had like in FA1 but with the code: 
+  # ggplot(data = diamonds) +
+  # geom_histogram(mapping = aes(x = carat))
+```
+### Remember that a histogram is a plot with `stat_bin` and `geom_bar`.
+
+### Modify your histogram code so that it uses a different `geom`, for example `geom_line` or `geom_point`.
+```{r}
+# This should be simple once you have the p$layer specification of a histogram.
+
+# let `q` and `r` be the modified histogram codes from p$layer specification with as `geom_line` and `geom_point` respectively.
+
+q <- p + layer(
+  geom = "line",
+  stat = "bin",
+  position = "stack",
+  mapping = aes(x = carat),
+  params = list(binwidth = 0.1)
+)
+
+r <- p + layer(
+  geom = "point",
+  stat = "bin",
+  position = "stack",
+  mapping = aes(x = carat),
+  params = list(binwidth = 0.1)
+)
+```
+
+```{r}
+# Recall q
+q
+
+# Recall r
+r
+```
+
+### In your histogram in container `p` (the one plotted with bars that you created first):
+```{r}
+# This is how object `p` visualizes its histogram given the `mapping`, `geom_bar`, `stat_bin`, `position`, and other parameters necessary
+p$layers
+```
+
+### Add an aesthetic mapping from one of the factor variables (maybe color or clarity) to the fill or color aesthetic.
+```{r}
+# let `s` and `t` be the modified histogram codes from p$layer but modified according to their aesthetics
+
+s <- ggplot(data = diamonds, aes(x = carat, fill = color)) +
+  p$layers
+
+t <- ggplot(data = diamonds, aes(x = carat, fill = clarity)) +
+  p$layers
+```
+
+```{r}
+# Recall s
+s
+# Recall t
+t
+```
+
+### What is the default position adjustment for a histogram contained in `s` and `t`? 
+```{r}
+s$layers
+print("As shown above, the default position adjustment for a histogram contained in `s` is `position_stack`")
+
+t$layers
+print("As shown above, the default position adjustment for a histogram contained in `t` is `position_stack`")
+```
+
+### Try changing the position adjustment in the histogram you created to something different.
+```{r}
+# If we have complicated layers already, it is also complicated to replicate everything and change only one specific argument to perform the current task!
+
+# We can change some of the properties of s$layer and t$layers without calling all parameters in layer() again:
+
+# Hint: try position = dodge
+# Change the position adjustment to dodge
+s$layers[[1]]$position <- position_dodge()
+t$layers[[1]]$position <- position_dodge()
+
+# Recall s with Updated Position:
+s
+
+# Recall s with Updated Position:
+t
+```
+
