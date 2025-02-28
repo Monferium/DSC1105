@@ -1,0 +1,199 @@
+---
+title: "DSC1105_MONFERO_FA4"
+author: "John Benedict A. Monfero"
+date: "2025-02-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+## 1. Using the `Mortality by Latitude` data
+```{r}
+data <- read.csv(
+  "mortality_by_latitude.csv" # file path matters
+)
+
+# Preview the dataset
+data
+```
+### 1.1. Make a plot of mortality index against mean average temperature.
+```{r}
+data %>%
+  ggplot(
+    mapping = aes(
+      x = temperature, y = mortality_index
+      )
+    ) +
+  geom_point() +
+  geom_smooth(
+    method = "lm", se = FALSE
+    ) +
+  labs(
+    title = "Mortality Index vs Mean Average Temperature",
+       x = "Mean Average Temperature (°C)",
+       y = "Mortality Index"
+    )
+```
+
+### 1.2. Is it hollow up or hollow down?
+**The given plot above shows up a trend - blue line - to be going upward as the data points follow through, indicating there exists a relationship that is hollow up!**
+
+### 1.3. Transformation to Straighten Out the Relationship
+Instead of using the `mortality_index`, we will apply logarithmic transformation of `mortality_index` as a new basis: `log(data$mortality_index)` will be utilized to further demonstrate stronger relationship.
+
+```{r}
+data %>%
+  ggplot(
+    mapping = aes(
+      x = temperature, y = log(mortality_index)
+      )
+    ) +
+  geom_point() +
+  geom_smooth(
+    method = "lm", se = FALSE
+    ) +
+  labs(
+    title = "Mortality Index vs Mean Average Temperature",
+       x = "Mean Average Temperature (°C)",
+       y = "Logarithmic Growth: Mortality Index"
+    )
+```
+
+##### 1.4. Checking the residuals remains using the `log(mortality_index)`
+
+> Residual: A residual value is **a measure of how much a regression line vertically misses a data point.** Regression lines are the best fit of a set of data. You can think of the lines as averages; a few data points will fit the line and others will noticeably miss.
+
+```{r}
+residuals <- resid(
+  lm(
+    log(
+      mortality_index
+      ) ~ temperature,
+    data = data
+    )
+)
+```
+
+##### Plotting the residuals
+
+```{r}
+data %>%
+  ggplot(
+    mapping = aes(
+      x = temperature, y = residuals
+    )
+  ) +
+  geom_point() +
+  geom_hline(
+    yintercept = 0.00, linetype = "dashed"
+  ) +
+  labs(
+    title = "Residuals of Log Mortality Index vs Mean Average Temperature",
+    x = "Mean Average Temperature (°C)",
+    y = "Residuals"
+    )
+
+print("The figure above implies that as we increase the mean average temperature, the trend with the mortality index became more fitting to the trend line, and the missing scattered points became less obvious.")
+```
+
+## 2. Diamond Dataset
+
+### 2.1.  Plot of `Log` `Price` as a Function of `Carat` with a `Loess` Smoother
+
+```{r}
+diamonds %>%
+  filter(carat <= 2.50
+    # Use the value `5.00` if none entries shall be filtered out
+  ) %>%
+  ggplot(
+    mapping = aes(
+      x = carat, y = log(price)
+    )
+  ) +
+  geom_point(
+    alpha = 0.3
+  ) +
+  geom_smooth(
+    method = "loess", span = 0.5, se = FALSE
+  ) +
+  labs(title = "Log Price vs Carat with Loess Smoother",
+       x = "Carat",
+       y = "Logarithmic Growth of Price")
+```
+
+### 2.2. Trying Several Values for Span and Degree Arguments
+
+```{r}
+diamonds %>%
+  filter(carat <= 2.50
+    # Use the value `5.00` if none entries shall be filtered out
+  ) %>%
+  ggplot(
+    mapping = aes(
+      x = carat, y = log(price)
+    )
+  ) +
+  geom_point(
+    alpha = 0.3
+  ) +
+  geom_smooth(
+    method = "loess", span = 0.5, se = FALSE, color = "steelblue"
+  ) +
+  geom_smooth( 
+    method = "loess", span = 1.5, se = FALSE, color = "yellow"
+  ) +
+  geom_smooth( 
+    method = "loess", span = 2.5, se = FALSE, color = "maroon"
+  ) +
+  labs(title = "Log Price vs Carat with Different Loess Spans",
+       x = "Carat",
+       y = "Logarithmic Growth of Price")
+```
+
+##### As `span` increases for `LOESS`, it follows more smoother fit that overgeneralized accross the data, risks of overfitting could happened. Too much low `span` for `LOESS` could underfit and maximizing the total area for residuals of the function.
+
+> Hence,  a `span` of 0.5 above shall be chosen as it provides a good balance between smoothness and capturing the neccesary trend in the data
+
+## 3. Comparing Loess Smoother to Polynomial + Step Function Regression
+
+### 3.1. Plot of Residuals for Both Models
+
+#### 3.1.1. Polynomial + step function regression
+
+```{r}
+subset_diamonds <- diamonds %>%
+  filter(carat <= 2.50)
+model_poly <- lm(log(price) ~ poly(carat, 3) + cut, data = subset_diamonds)
+residuals_poly <- resid(model_poly)
+# Plotting residuals for polynomial model
+ggplot(subset_diamonds, aes(x = carat, y = residuals_poly)) +
+  geom_point(alpha = 0.3, color = "salmon") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "purple") +
+  labs(title = "Residuals of Polynomial + Step Function Model",
+       x = "Carat",
+       y = "Residuals")
+```
+
+#### 3.1.2. Plotting residuals for loess model
+
+```{r}
+model_loess <- loess(log(price) ~ carat, data = subset_diamonds, span = 0.5)
+residuals_loess <- residuals(model_loess)
+ # Plotting residuals for loess model
+ggplot(subset_diamonds, aes(x = carat, y = residuals_loess)) +
+  geom_point(alpha = 0.3, color = "forestgreen") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "blue") +
+  labs(title = "Residuals of Loess Model",
+       x = "Carat",
+       y = "Residuals")
+```
+
+### 3.2. Which model is more faithful
+
+> The `3.1.2` loess model appears to be more faithful to the data as it captures the non-linear trends better and has overall smaller residuals.
