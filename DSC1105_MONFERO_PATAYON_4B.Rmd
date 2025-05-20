@@ -1,0 +1,48 @@
+---
+title: "Untitled"
+author: "PATAYON, SPIKE LEE-ROY V"
+date: "2025-05-19"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- read.csv("C:\\Users\\spike\\Documents\\SA2 FILES\\nsfg_selected_variables.csv")
+
+head(data)
+```
+
+# Contingency Tables
+
+For this part we will be exploring the variables CURRMETH1 × MARSTAT
+```{r}
+# Clean data: remove missing codes (e.g., 998/999 if present)
+nsfg_ct <- data %>%
+  filter(CURRMETH1 < 998 & MARSTAT < 998) # removing dont know and Refused 
+
+# Contingency table
+ctable <- table(nsfg_ct$CURRMETH1, nsfg_ct$MARSTAT)
+print(ctable)
+
+# Chi-square test
+chisq_result <- chisq.test(ctable)
+print(chisq_result)
+
+```
+Interpration:
+A contingency table was constructed to examine the relationship between contraceptive method (CURRMETH1) and marital status (MARSTAT), using data from the 2022–2023 NSFG Female Respondent dataset. A Chi-square test of independence was performed to assess whether the distribution of contraceptive methods differed by marital status. The results revealed a statistically significant association (χ² = 391.45, df = 68, p < 0.001), indicating that contraceptive method choices vary significantly across different marital categories. However, a warning was issued regarding the Chi-square approximation, due to sparse counts in some cells. This suggests that the results should be interpreted with some caution, as low expected frequencies in certain contraceptive method groups may affect the accuracy of the test. Overall, the analysis supports the conclusion that marital status is associated with differences in contraceptive behavior among respondents.
+
+# Visualize with mosaic plots or heatmaps
+```{r}
+library(vcd)
+
+# Mosaic plot
+mosaic(ctable, shade = TRUE, legend = TRUE,
+       main = "Contraceptive Method by Marital Status")
+
+```
+
+The mosaic plot illustrates a statistically significant association between contraceptive method and marital status, as evidenced by a Pearson chi-square test with a p-value of less than 2.22e-16. The color intensity and direction of the Pearson residuals reveal notable deviations from independence, indicating that certain contraceptive methods are more or less commonly used within specific marital status groups. Married individuals are significantly more likely to utilize permanent contraceptive methods such as female sterilization and intrauterine devices (IUDs), as shown by the strong positive residuals (blue tiles) in those categories. In contrast, they are underrepresented in the use of temporary or emergency methods, such as condoms and emergency contraception pills, indicated by the red residuals. Cohabiting individuals, or those living with a partner without being formally married, appear more likely to use condoms and birth control pills, while individuals who are neither married nor cohabiting are less likely to use long-term or permanent methods such as sterilization or vasectomy. These patterns suggest that marital status plays a critical role in influencing contraceptive behavior, likely reflecting differences in relationship stability, family planning intentions, and access to healthcare resources across groups.
