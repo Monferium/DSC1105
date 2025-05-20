@@ -1,0 +1,134 @@
+---
+title: "Untitled"
+author: "PATAYON, SPIKE LEE-ROY V"
+date: "2025-05-19"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+```
+
+```{r}
+data <- read.csv("C:\\Users\\spike\\Documents\\SA2 FILES\\nsfg_selected_variables.csv")
+
+head(data)
+
+```
+
+# Step 1:
+Lets explore the dataset by looking at its: histograms, bar charts, and boxplots.
+
+## Histogram
+
+```{r}
+ggplot(data, aes(x = PTSB4MAR)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(title = "Number of Male Sexual Partners Before Marriage",
+       x = "PTSB4MAR", y = "Count")
+```
+There are extreme values at the far right of the x-axis — specifically at values near 998 and 999 — which are codes for "Refused" and "Don't know" in the NSFG dataset. These should not be treated as real data values in the histogram.
+
+```{r}
+# Remove special codes 998 = Refused and 999 = Don't know
+nsfg_clean <- data %>% filter(PTSB4MAR < 998)
+
+# Plot the histogram again
+ggplot(nsfg_clean, aes(x = PTSB4MAR)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(title = "Number of Male Sexual Partners Before Marriage",
+       x = "PTSB4MAR", y = "Count") +
+  theme_minimal()
+
+```
+from the codebook:
+label - value
+None - 0
+1 partner - 1
+2 partners - 2
+3 partners - 3
+4 partners - 4
+5 partners - 5
+6 partners - 6
+7 partners 7
+8 partners - 8
+9 partners - 9
+10 to 19 partners - 10-19 
+20 more partners - 20
+Refused - 998
+Don't know - 999
+## Bar Charts
+
+```{r}
+ggplot(data, aes(x = factor(RSCRRACE))) +
+  geom_bar(fill = "coral") +
+  labs(title = "Race Distribution", x = "RSCRRACE Code", y = "Count")
+```
+
+## Box Plot
+```{r}
+ggplot(data, aes(x = factor(RSCRRACE), y = PREGNUM)) +
+  geom_boxplot(fill = "lightgreen") +
+  labs(title = "Pregnancy Counts by Race Group", x = "RSCRRACE Code", y = "Number of Pregnancies")
+```
+We will keep the outliers for the statistical analysis 
+#Step 2:
+Conduct multiple tests (e.g., comparing pregnancy outcomes across ethnic groups) and adjust p-values using Bonferroni or False Discovery Rate (FDR) methods.
+
+We’ll test whether the mean number of pregnancies (PREGNUM) differs significantly across racial groups (RSCRRACE).
+
+```{r}
+anova_result <- aov(PREGNUM ~ factor(RSCRRACE), data = nsfg_subset)
+summary(anova_result)
+```
+The p-value is far below 0.001, so we reject the null hypothesis that all race groups have the same mean pregnancy count.
+
+But ANOVA does not tell us which race groups differ from each other — that’s where post hoc tests with p-value correction come in.
+
+```{r}
+tukey_race <- TukeyHSD(anova_result)
+print(tukey_race)
+
+raw_pvals <- tukey_race$RSCRRACE[, "p adj"]
+bonf_pvals <- p.adjust(raw_pvals, method = "bonferroni")
+fdr_pvals <- p.adjust(raw_pvals, method = "fdr")
+
+comparison_results <- data.frame(
+  Comparison = rownames(tukey_race$RSCRRACE),
+  Tukey_P = raw_pvals,
+  Bonferroni_P = bonf_pvals,
+  FDR_P = fdr_pvals
+)
+print(comparison_results)
+```
+Based on the codebook:
+1 is for other, 2 for black, 3 for white, and 4 for hispanic
+
+this is the summary result:
+| Comparison | Mean Difference | 95% CI (Lower – Upper) | Adjusted p-value |
+| ---------- | --------------- | ---------------------- | ---------------- |
+| 2 – 1      | **0.6798**      | 0.4331 – 0.9245        | **< 0.0001**     |
+| 3 – 1      | **0.2853**      | 0.0728 – 0.4978        | **0.0032**       |
+| 4 – 1      | **0.4425**      | 0.2053 – 0.6797        | **0.00001**      |
+| 3 – 2      | **-0.3935**     | -0.5662 – -0.2207      | **< 0.0001**     |
+| 4 – 2      | **-0.2363**     | -0.4387 – -0.0339      | **0.0144**       |
+| 4 – 3      | 0.1571          | -0.0033 – 0.3176       | 0.0575 (ns)      |
+
+Groups 2 vs 1, 3 vs 1, and 4 vs 1 show significant differences in average pregnancy counts — all with p-values well below 0.01.
+
+Group 3 vs 2 and Group 4 vs 2 are also significantly different.
+
+Group 4 vs 3 has a borderline p-value (0.057), which is not significant at α = 0.05 under Tukey adjustment.
+
+# Step 3: 
+Discuss risks of Type I error and how adjustments affect conclusions.
+
+In statistical hypothesis testing, a Type I error occurs when a true null hypothesis is incorrectly rejected, leading to a false positive conclusion. This risk becomes amplified when multiple comparisons are made, as each additional test increases the probability of making at least one Type I error across the set of tests. In this analysis, pregnancy outcomes (total number of pregnancies) were compared across racial groups using ANOVA followed by Tukey’s Honestly Significant Difference (HSD) test. Since six pairwise comparisons were performed, the analysis incorporated multiple comparison adjustments to control the family-wise error rate. Tukey’s HSD is specifically designed to address this issue by maintaining the overall probability of making a Type I error at or below the chosen significance level, typically 0.05. Most comparisons in this analysis remained statistically significant even after adjustment, indicating strong group differences. However, one borderline comparison (Group 4 vs. Group 3) became non-significant when corrected, highlighting how adjustments can influence interpretive outcomes. While stricter methods like Bonferroni provide strong control over Type I error, they can increase the risk of Type II errors by being overly conservative. Alternatively, methods like the False Discovery Rate (FDR) offer a balance, especially in exploratory research, by controlling the expected proportion of false positives among significant results. Overall, adjusting for multiple comparisons is essential to ensure the reliability of statistical conclusions and to minimize the risk of drawing misleading inferences from chance variations in the data.
